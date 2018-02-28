@@ -18,8 +18,8 @@ contract EsprezzoCrowdsale is CappedCrowdsale, RefundableCrowdsale {
   uint256 public tokensForEcosystem = 20000000000000000000;
   uint256 public tokensForTeam = 10000000000000000000;
   uint256 public tokensForBounty = 10000000000000000000;
-  uint256 public totalTokensForSale = 60000000000000000000; // 60 HTs will be sold in Crowdsale
-  uint256 public totalTokensForSaleDuringPreICO = 20000000000000000000; // 20 out of 60 HTs will be sold during PreICO
+  uint256 public totalTokensForSale = 60000000000000000000; 
+  uint256 public totalTokensForSaleDuringPreICO = 20000000000000000000;
   // ==============================
 
   // Amount raised in PreICO
