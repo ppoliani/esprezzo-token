@@ -14,7 +14,7 @@ contract EsprezzoCrowdsale is CappedCrowdsale, RefundableCrowdsale {
 
   // Token Distribution
   // =============================
-  uint256 public maxTokens = 100000000000000000000; // There will be total 100 Hashnode Tokens
+  uint256 public maxTokens = 100000000000000000000; 
   uint256 public tokensForEcosystem = 20000000000000000000;
   uint256 public tokensForTeam = 10000000000000000000;
   uint256 public tokensForBounty = 10000000000000000000;
