@@ -1,9 +1,13 @@
 pragma solidity ^0.4.18;
 
-import 'zeppelin-solidity/contracts/token/MintableToken.sol';
+import "zeppelin-solidity/contracts/token/ERC20/DetailedERC20.sol";
+import 'zeppelin-solidity/contracts/token/ERC20/MintableToken.sol';
 
-contract EsprezzoToken is MintableToken {
+contract EsprezzoToken is MintableToken, DetailedERC20 {
   string public name = "Esprezzo Token";
-  string public symbol = "EZP";
+  string public symbol = "EZP"; 
   uint8 public decimals = 18;
+
+  function EsprezzoToken() public DetailedERC20(name, symbol, decimals) {
+  }
 }

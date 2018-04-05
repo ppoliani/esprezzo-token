@@ -1,8 +1,10 @@
 pragma solidity ^0.4.18;
 
 import './EsprezzoToken.sol';
-import 'zeppelin-solidity/contracts/crowdsale/CappedCrowdsale.sol';
-import 'zeppelin-solidity/contracts/crowdsale/RefundableCrowdsale.sol';
+import 'zeppelin-solidity/contracts/crowdsale/validation/CappedCrowdsale.sol';
+import "zeppelin-solidity/contracts/token/ERC20/MintableToken.sol";
+import "zeppelin-solidity/contracts/crowdsale/validation/TimedCrowdsale.sol";
+import 'zeppelin-solidity/contracts/crowdsale/distribution/RefundableCrowdsale.sol';
 
 contract EsprezzoCrowdsale is CappedCrowdsale, RefundableCrowdsale {
 
@@ -27,7 +29,6 @@ contract EsprezzoCrowdsale is CappedCrowdsale, RefundableCrowdsale {
   uint256 public totalWeiRaisedDuringPreICO;
   // ===================
 
-
   // Events
   event EthTransferred(string text);
   event EthRefunded(string text);
@@ -35,7 +36,18 @@ contract EsprezzoCrowdsale is CappedCrowdsale, RefundableCrowdsale {
 
   // Constructor
   // ============
-  function EsprezzoCrowdsale(uint256 _startTime, uint256 _endTime, uint256 _rate, address _wallet, uint256 _goal, uint256 _cap) CappedCrowdsale(_cap) FinalizableCrowdsale() RefundableCrowdsale(_goal) Crowdsale(_startTime, _endTime, _rate, _wallet) public {
+  function EsprezzoCrowdsale(
+    uint256 _startTime, 
+    uint256 _endTime, 
+    uint256 _rate, 
+    address _wallet, 
+    uint256 _goal, 
+    uint256 _cap
+  )  
+    CappedCrowdsale(_cap) 
+    RefundableCrowdsale(_goal) 
+    TimedCrowdsale(_startTime, _endTime) 
+    Crowdsale(_rate, _wallet, createTokenContract()) public {
       require(_goal <= _cap);
   }
   // =============
@@ -94,13 +106,13 @@ contract EsprezzoCrowdsale is CappedCrowdsale, RefundableCrowdsale {
       }
   }
 
-  function forwardFunds() internal {
+  function _forwardFunds() internal {
       if (stage == CrowdsaleStage.PreICO) {
           wallet.transfer(msg.value);
           EthTransferred("forwarding funds to wallet");
       } else if (stage == CrowdsaleStage.ICO) {
           EthTransferred("forwarding funds to refundable vault");
-          super.forwardFunds();
+          super._forwardFunds();
       }
   }
   // ===========================
@@ -109,7 +121,6 @@ contract EsprezzoCrowdsale is CappedCrowdsale, RefundableCrowdsale {
   // ====================================================================
 
   function finish(address _teamFund, address _ecosystemFund, address _bountyFund) public onlyOwner {
-
       require(!isFinalized);
       uint256 alreadyMinted = token.totalSupply();
       require(alreadyMinted < maxTokens);
@@ -119,9 +130,10 @@ contract EsprezzoCrowdsale is CappedCrowdsale, RefundableCrowdsale {
         tokensForEcosystem = tokensForEcosystem + unsoldTokens;
       }
 
-      token.mint(_teamFund,tokensForTeam);
-      token.mint(_ecosystemFund,tokensForEcosystem);
-      token.mint(_bountyFund,tokensForBounty);
+      MintableToken mintableToken = MintableToken(token);
+      mintableToken.mint(_teamFund,tokensForTeam);
+      mintableToken.mint(_ecosystemFund,tokensForEcosystem);
+      mintableToken.mint(_bountyFund,tokensForBounty);
       finalize();
   }
   // ===============================
