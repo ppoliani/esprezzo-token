@@ -1,12 +1,15 @@
-pragma solidity ^0.4.18;
+pragma solidity 0.4.19;
 
-import './EsprezzoToken.sol';
+import "zeppelin-solidity/contracts/math/SafeMath.sol";
 import 'zeppelin-solidity/contracts/crowdsale/validation/CappedCrowdsale.sol';
 import "zeppelin-solidity/contracts/token/ERC20/MintableToken.sol";
 import "zeppelin-solidity/contracts/crowdsale/validation/TimedCrowdsale.sol";
 import 'zeppelin-solidity/contracts/crowdsale/distribution/RefundableCrowdsale.sol';
+import "zeppelin-solidity/contracts/crowdsale/emission/MintedCrowdsale.sol";
+import './EsprezzoToken.sol';
 
-contract EsprezzoCrowdsale is CappedCrowdsale, RefundableCrowdsale {
+contract EsprezzoCrowdsale is RefundableCrowdsale, MintedCrowdsale, CappedCrowdsale {
+  using SafeMath for uint256;
 
   // ICO Stage
   // ============
@@ -43,11 +46,11 @@ contract EsprezzoCrowdsale is CappedCrowdsale, RefundableCrowdsale {
     address _wallet, 
     uint256 _goal, 
     uint256 _cap
-  )  
+  ) public
     CappedCrowdsale(_cap) 
-    RefundableCrowdsale(_goal) 
     TimedCrowdsale(_startTime, _endTime) 
-    Crowdsale(_rate, _wallet, createTokenContract()) public {
+    RefundableCrowdsale(_goal) 
+    Crowdsale(_rate, _wallet, createTokenContract()) {
       require(_goal <= _cap);
   }
   // =============
@@ -56,6 +59,7 @@ contract EsprezzoCrowdsale is CappedCrowdsale, RefundableCrowdsale {
   // =================
   function createTokenContract() internal returns (MintableToken) {
     return new EsprezzoToken(); // Deploys the ERC20 token. Automatically called when crowdsale contract is deployed
+    // return MintableToken(0xb9e70d54ecc9c3692b41640aee85807864d997da);
   }
   // ==================
 
@@ -63,13 +67,12 @@ contract EsprezzoCrowdsale is CappedCrowdsale, RefundableCrowdsale {
   // =========================================================
 
   // Change Crowdsale Stage. Available Options: PreICO, ICO
-  function setCrowdsaleStage(uint value) public onlyOwner {
-
+  function setCrowdsaleStage(uint256 value) public onlyOwner {
       CrowdsaleStage _stage;
 
-      if (uint(CrowdsaleStage.PreICO) == value) {
+      if (uint256(CrowdsaleStage.PreICO) == value) {
         _stage = CrowdsaleStage.PreICO;
-      } else if (uint(CrowdsaleStage.ICO) == value) {
+      } else if (uint256(CrowdsaleStage.ICO) == value) {
         _stage = CrowdsaleStage.ICO;
       }
 
@@ -89,20 +92,23 @@ contract EsprezzoCrowdsale is CappedCrowdsale, RefundableCrowdsale {
 
   // ================ Stage Management Over =====================
 
-  // Token Purchase
-  // =========================
-  function () external payable {
-      uint256 tokensThatWillBeMintedAfterPurchase = msg.value.mul(rate);
-      if ((stage == CrowdsaleStage.PreICO) && (token.totalSupply() + tokensThatWillBeMintedAfterPurchase > totalTokensForSaleDuringPreICO)) {
-        msg.sender.transfer(msg.value); // Refund them
-        EthRefunded("PreICO Limit Hit");
-        return;
-      }
+  function _processPurchase(address _beneficiary, uint256 _tokenAmount) internal {
+    if ((stage == CrowdsaleStage.PreICO) && (token.totalSupply() + _tokenAmount > totalTokensForSaleDuringPreICO)) {
+      msg.sender.transfer(msg.value); // Refund them
+      EthRefunded("PreICO Limit Hit");
+      return;
+    }
 
-      buyTokens(msg.sender);
+    super._processPurchase(_beneficiary, _tokenAmount);
+  }
 
+  function _preValidatePurchase(address _beneficiary, uint256 _weiAmount) internal {
+    super._preValidatePurchase(_beneficiary, _weiAmount);
+  }
+
+  function _postValidatePurchase(address _beneficiary, uint256 _weiAmount) internal {
       if (stage == CrowdsaleStage.PreICO) {
-          totalWeiRaisedDuringPreICO = totalWeiRaisedDuringPreICO.add(msg.value);
+        totalWeiRaisedDuringPreICO = totalWeiRaisedDuringPreICO.add(msg.value);
       }
   }
 
@@ -115,6 +121,7 @@ contract EsprezzoCrowdsale is CappedCrowdsale, RefundableCrowdsale {
           super._forwardFunds();
       }
   }
+  
   // ===========================
 
   // Finish: Mint Extra Tokens as needed before finalizing the Crowdsale.
@@ -136,6 +143,7 @@ contract EsprezzoCrowdsale is CappedCrowdsale, RefundableCrowdsale {
       mintableToken.mint(_bountyFund,tokensForBounty);
       finalize();
   }
+  
   // ===============================
 
   // REMOVE THIS FUNCTION ONCE YOU ARE READY FOR PRODUCTION
