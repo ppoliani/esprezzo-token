@@ -8,7 +8,7 @@ import 'zeppelin-solidity/contracts/crowdsale/distribution/RefundableCrowdsale.s
 import "zeppelin-solidity/contracts/crowdsale/emission/MintedCrowdsale.sol";
 import './EsprezzoToken.sol';
 
-contract EsprezzoCrowdsale is MintedCrowdsale, RefundableCrowdsale, CappedCrowdsale {
+contract EsprezzoCrowdsale is RefundableCrowdsale, MintedCrowdsale, CappedCrowdsale {
   using SafeMath for uint256;
 
   // ICO Stage

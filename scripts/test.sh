@@ -14,9 +14,9 @@ cleanup() {
 }
 
 if [ "$SOLIDITY_COVERAGE" = true ]; then
-  testrpc_port=8555
+  testrpc_port=7555
 else
-  testrpc_port=8545
+  testrpc_port=7545
 fi
 
 testrpc_running() {
@@ -27,9 +27,9 @@ start_testrpc() {
   local mnemonic="manage slow ask bicycle enjoy either swear always ticket child catch phone"
 
   if [ "$SOLIDITY_COVERAGE" = true ]; then
-    node_modules/.bin/testrpc-sc --gasLimit 0xfffffffffff --port "$testrpc_port" --mnemonic "${mnemonic}" --defaultBalanceEther '200000' > /dev/null &
+    node_modules/.bin/testrpc-sc --gasLimit 0xfffffffffff --port $testrpc_port --mnemonic "${mnemonic}" --defaultBalanceEther '200000' > /dev/null &
   else
-    node_modules/.bin/ganache-cli --gasLimit 0xfffffffffff --gasPrice 10 --mnemonic "${mnemonic}" --defaultBalanceEther '2000'> /dev/null &
+    node_modules/.bin/ganache-cli --gasLimit 0xfffffffffff --port $testrpc_port --gasPrice 10 --mnemonic "${mnemonic}" --defaultBalanceEther '2000'> /dev/null &
   fi
 
   testrpc_pid=$!

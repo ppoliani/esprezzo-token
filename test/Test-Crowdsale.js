@@ -1,104 +1,87 @@
-var EsprezzoCrowdsale = artifacts.require('EsprezzoCrowdsale');
-var EsprezzoToken = artifacts.require('EsprezzoToken');
+const EsprezzoCrowdsale = artifacts.require('EsprezzoCrowdsale');
+const EsprezzoToken = artifacts.require('EsprezzoToken');
+const {increaseTimeTo} = require('./helpers/timeUtils');
 
-contract('EsprezzoCrowdsale', function(accounts) {
-    it('should deploy the token and store the address', function(done){
-        EsprezzoCrowdsale.deployed().then(async function(instance) {
-            const token = await instance.token.call();
-            assert(token, 'Token address couldn\'t be stored');
-            done();
-       });
-    });
+contract('EsprezzoCrowdsale', async (accounts) => {
+  let instance;
 
-    it('should set stage to PreICO', function(done){
-        EsprezzoCrowdsale.deployed().then(async function(instance) {
-          await instance.setCrowdsaleStage(0);
-          const stage = await instance.stage.call();
-          assert.equal(stage.toNumber(), 0, 'The stage couldn\'t be set to PreICO');
-          done();
-       });
-    });
+  before(async () => {
+    instance = await EsprezzoCrowdsale.deployed();
+    const openingTime = await instance.openingTime();
+    await increaseTimeTo(openingTime.toNumber() + 1000);
+  });
 
-    it.only('one ETH should buy 5 Esprezzo Tokens in PreICO', function(done){
-        EsprezzoCrowdsale.deployed().then(async function(instance) {
-            const data = await instance.sendTransaction({ from: accounts[7], value: web3.toWei(1, 'ether')});
-            const tokenAddress = await instance.token();
-            const esprezzoToken = EsprezzoToken.at(tokenAddress);
-            const tokenAmount = await esprezzoToken.balanceOf(accounts[7]);
-            assert.equal(tokenAmount.toNumber(), 5000000000000000000, 'The sender didn\'t receive the tokens as per PreICO rate');
-            done();
-       });
-    });
+  it('should deploy the token and store the address', async () => {
+    const token = await instance.token.call();
+    assert(token, 'Token address couldn\'t be stored');
+  });
 
-    it('should transfer the ETH to wallet immediately in Pre ICO', function(done){
-        EsprezzoCrowdsale.deployed().then(async function(instance) {
-            let balanceOfBeneficiary = await web3.eth.getBalance(accounts[8]);
-            balanceOfBeneficiary = Number(balanceOfBeneficiary.toString(10));
+  it('should set stage to PreICO', async () => {
+    await instance.setCrowdsaleStage(0);
+    const stage = await instance.stage.call();
+    assert.equal(stage.toNumber(), 0, 'The stage couldn\'t be set to PreICO');
+  });
 
-            await instance.sendTransaction({ from: accounts[1], value: web3.toWei(2, 'ether')});
+  it('one ETH should buy 5 Esprezzo Tokens in PreICO', async () => {
+    const data = await instance.sendTransaction({ from: accounts[7], value: web3.toWei(1, 'ether') });
+    const tokenAddress = await instance.token();
+    const esprezzoToken = EsprezzoToken.at(tokenAddress);
+    const tokenAmount = await esprezzoToken.balanceOf(accounts[7]);
+    assert.equal(tokenAmount.toNumber(), 5000000000000000000, 'The sender didn\'t receive the tokens as per PreICO rate');
+  });
 
-            let newBalanceOfBeneficiary = await web3.eth.getBalance(accounts[8]);
-            newBalanceOfBeneficiary = Number(newBalanceOfBeneficiary.toString(10));
+  it('should transfer the ETH to wallet immediately in Pre ICO', async () => {
+    let balanceOfBeneficiary = await web3.eth.getBalance(accounts[9]);
+    balanceOfBeneficiary = Number(balanceOfBeneficiary.toString(10));
 
-            assert.equal(newBalanceOfBeneficiary, balanceOfBeneficiary + 2000000000000000000, 'ETH couldn\'t be transferred to the beneficiary');
-            done();
-       });
-    });
+    await instance.sendTransaction({ from: accounts[1], value: web3.toWei(2, 'ether') });
 
-    it('should set variable `totalWeiRaisedDuringPreICO` correctly', function(done){
-        EsprezzoCrowdsale.deployed().then(async function(instance) {
-            var amount = await instance.totalWeiRaisedDuringPreICO.call();
-            assert.equal(amount.toNumber(), web3.toWei(3, 'ether'), 'Total ETH raised in PreICO was not calculated correctly');
-            done();
-       });
-    });
+    let newBalanceOfBeneficiary = await web3.eth.getBalance(accounts[9]);
+    newBalanceOfBeneficiary = Number(newBalanceOfBeneficiary.toString(10));
 
-    it('should set stage to ICO', function(done){
-        EsprezzoCrowdsale.deployed().then(async function(instance) {
-          await instance.setCrowdsaleStage(1);
-          const stage = await instance.stage.call();
-          assert.equal(stage.toNumber(), 1, 'The stage couldn\'t be set to ICO');
-          done();
-       });
-    });
+    assert.equal(newBalanceOfBeneficiary, balanceOfBeneficiary + 2000000000000000000, 'ETH couldn\'t be transferred to the beneficiary');
+  });
 
-    it('one ETH should buy 2 Esprezzo Tokens in ICO', function(done){
-        EsprezzoCrowdsale.deployed().then(async function(instance) {
-            const data = await instance.sendTransaction({ from: accounts[2], value: web3.toWei(1.5, 'ether')});
-            const tokenAddress = await instance.token.call();
-            const esprezzoToken = EsprezzoToken.at(tokenAddress);
-            const tokenAmount = await esprezzoToken.balanceOf(accounts[2]);
-            assert.equal(tokenAmount.toNumber(), 3000000000000000000, 'The sender didn\'t receive the tokens as per ICO rate');
-            done();
-       });
-    });
+  it('should set variable `totalWeiRaisedDuringPreICO` correctly', async () => {
+    const amount = await instance.totalWeiRaisedDuringPreICO.call();
+    assert.equal(amount.toNumber(), web3.toWei(3, 'ether'), 'Total ETH raised in PreICO was not calculated correctly');
+  });
 
-    it('should transfer the raised ETH to RefundVault during ICO', function(done){
-        EsprezzoCrowdsale.deployed().then(async function(instance) {
-            var vaultAddress = await instance.vault.call();
+  it('should set stage to ICO', async () => {
+    await instance.setCrowdsaleStage(1);
+    const stage = await instance.stage.call();
+    assert.equal(stage.toNumber(), 1, 'The stage couldn\'t be set to ICO');
+  });
 
-            let balance = await web3.eth.getBalance(vaultAddress);
+  it('one ETH should buy 2 Esprezzo Tokens in ICO', async () => {
+    const data = await instance.sendTransaction({ from: accounts[2], value: web3.toWei(1.5, 'ether') });
+    const tokenAddress = await instance.token.call();
+    const esprezzoToken = EsprezzoToken.at(tokenAddress);
+    const tokenAmount = await esprezzoToken.balanceOf(accounts[2]);
+    assert.equal(tokenAmount.toNumber(), 3000000000000000000, 'The sender didn\'t receive the tokens as per ICO rate');
+  });
 
-            assert.equal(balance.toNumber(), 1500000000000000000, 'ETH couldn\'t be transferred to the vault');
-            done();
-       });
-    });
+  it('should transfer the raised ETH to RefundVault during ICO', async () => {
+    const vaultAddress = await instance.vault.call();
+    const balance = await web3.eth.getBalance(vaultAddress);
+    assert.equal(balance.toNumber(), 1500000000000000000, 'ETH couldn\'t be transferred to the vault');
+  });
 
-    it('Vault balance should be added to our wallet once ICO is over', function(done){
-        EsprezzoCrowdsale.deployed().then(async function(instance) {
-            let balanceOfBeneficiary = await web3.eth.getBalance(accounts[8]);
-            balanceOfBeneficiary = balanceOfBeneficiary.toNumber();
+  it('Vault balance should be added to our wallet once ICO is over', async () => {
+    let balanceOfBeneficiary = await web3.eth.getBalance(accounts[9]);
+    balanceOfBeneficiary = balanceOfBeneficiary.toNumber();
 
-            var vaultAddress = await instance.vault.call();
-            let vaultBalance = await web3.eth.getBalance(vaultAddress);
+    const vaultAddress = await instance.vault.call();
+    const vaultBalance = await web3.eth.getBalance(vaultAddress);
 
-            await instance.finish(accounts[0], accounts[1], accounts[2]);
+    const closingTime = await instance.closingTime();
+    await increaseTimeTo(closingTime.toNumber() + 10);
 
-            let newBalanceOfBeneficiary = await web3.eth.getBalance(accounts[8]);
-            newBalanceOfBeneficiary = newBalanceOfBeneficiary.toNumber();
+    await instance.finish(accounts[0], accounts[1], accounts[2]);
 
-            assert.equal(newBalanceOfBeneficiary, balanceOfBeneficiary + vaultBalance.toNumber(), 'Vault balance couldn\'t be sent to the wallet');
-            done();
-       });
-    });
+    let newBalanceOfBeneficiary = await web3.eth.getBalance(accounts[9]);
+    newBalanceOfBeneficiary = newBalanceOfBeneficiary.toNumber();
+
+    assert.equal(newBalanceOfBeneficiary, balanceOfBeneficiary + vaultBalance.toNumber(), 'Vault balance couldn\'t be sent to the wallet');
+  });
 });
