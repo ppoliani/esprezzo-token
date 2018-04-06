@@ -1,5 +1,5 @@
-var EsprezzoCrowdsale = artifacts.require("EsprezzoCrowdsale");
-var EsprezzoToken = artifacts.require("EsprezzoToken");
+var EsprezzoCrowdsale = artifacts.require('EsprezzoCrowdsale');
+var EsprezzoToken = artifacts.require('EsprezzoToken');
 
 contract('EsprezzoCrowdsale', function(accounts) {
     it('should deploy the token and store the address', function(done){
@@ -19,10 +19,10 @@ contract('EsprezzoCrowdsale', function(accounts) {
        });
     });
 
-    it('one ETH should buy 5 Hashnode Tokens in PreICO', function(done){
+    it.only('one ETH should buy 5 Esprezzo Tokens in PreICO', function(done){
         EsprezzoCrowdsale.deployed().then(async function(instance) {
-            const data = await instance.sendTransaction({ from: accounts[7], value: web3.toWei(1, "ether")});
-            const tokenAddress = await instance.token.call();
+            const data = await instance.sendTransaction({ from: accounts[7], value: web3.toWei(1, 'ether')});
+            const tokenAddress = await instance.token();
             const esprezzoToken = EsprezzoToken.at(tokenAddress);
             const tokenAmount = await esprezzoToken.balanceOf(accounts[7]);
             assert.equal(tokenAmount.toNumber(), 5000000000000000000, 'The sender didn\'t receive the tokens as per PreICO rate');
@@ -35,7 +35,7 @@ contract('EsprezzoCrowdsale', function(accounts) {
             let balanceOfBeneficiary = await web3.eth.getBalance(accounts[8]);
             balanceOfBeneficiary = Number(balanceOfBeneficiary.toString(10));
 
-            await instance.sendTransaction({ from: accounts[1], value: web3.toWei(2, "ether")});
+            await instance.sendTransaction({ from: accounts[1], value: web3.toWei(2, 'ether')});
 
             let newBalanceOfBeneficiary = await web3.eth.getBalance(accounts[8]);
             newBalanceOfBeneficiary = Number(newBalanceOfBeneficiary.toString(10));
@@ -48,7 +48,7 @@ contract('EsprezzoCrowdsale', function(accounts) {
     it('should set variable `totalWeiRaisedDuringPreICO` correctly', function(done){
         EsprezzoCrowdsale.deployed().then(async function(instance) {
             var amount = await instance.totalWeiRaisedDuringPreICO.call();
-            assert.equal(amount.toNumber(), web3.toWei(3, "ether"), 'Total ETH raised in PreICO was not calculated correctly');
+            assert.equal(amount.toNumber(), web3.toWei(3, 'ether'), 'Total ETH raised in PreICO was not calculated correctly');
             done();
        });
     });
@@ -64,7 +64,7 @@ contract('EsprezzoCrowdsale', function(accounts) {
 
     it('one ETH should buy 2 Esprezzo Tokens in ICO', function(done){
         EsprezzoCrowdsale.deployed().then(async function(instance) {
-            const data = await instance.sendTransaction({ from: accounts[2], value: web3.toWei(1.5, "ether")});
+            const data = await instance.sendTransaction({ from: accounts[2], value: web3.toWei(1.5, 'ether')});
             const tokenAddress = await instance.token.call();
             const esprezzoToken = EsprezzoToken.at(tokenAddress);
             const tokenAmount = await esprezzoToken.balanceOf(accounts[2]);

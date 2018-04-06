@@ -8,7 +8,7 @@ import 'zeppelin-solidity/contracts/crowdsale/distribution/RefundableCrowdsale.s
 import "zeppelin-solidity/contracts/crowdsale/emission/MintedCrowdsale.sol";
 import './EsprezzoToken.sol';
 
-contract EsprezzoCrowdsale is RefundableCrowdsale, MintedCrowdsale, CappedCrowdsale {
+contract EsprezzoCrowdsale is MintedCrowdsale, RefundableCrowdsale, CappedCrowdsale {
   using SafeMath for uint256;
 
   // ICO Stage
@@ -59,7 +59,6 @@ contract EsprezzoCrowdsale is RefundableCrowdsale, MintedCrowdsale, CappedCrowds
   // =================
   function createTokenContract() internal returns (MintableToken) {
     return new EsprezzoToken(); // Deploys the ERC20 token. Automatically called when crowdsale contract is deployed
-    // return MintableToken(0xb9e70d54ecc9c3692b41640aee85807864d997da);
   }
   // ==================
 
@@ -93,7 +92,7 @@ contract EsprezzoCrowdsale is RefundableCrowdsale, MintedCrowdsale, CappedCrowds
   // ================ Stage Management Over =====================
 
   function _processPurchase(address _beneficiary, uint256 _tokenAmount) internal {
-    if ((stage == CrowdsaleStage.PreICO) && (token.totalSupply() + _tokenAmount > totalTokensForSaleDuringPreICO)) {
+    if ((stage == CrowdsaleStage.PreICO) && (token.totalSupply().add(_tokenAmount) > totalTokensForSaleDuringPreICO)) {
       msg.sender.transfer(msg.value); // Refund them
       EthRefunded("PreICO Limit Hit");
       return;
@@ -102,13 +101,9 @@ contract EsprezzoCrowdsale is RefundableCrowdsale, MintedCrowdsale, CappedCrowds
     super._processPurchase(_beneficiary, _tokenAmount);
   }
 
-  function _preValidatePurchase(address _beneficiary, uint256 _weiAmount) internal {
-    super._preValidatePurchase(_beneficiary, _weiAmount);
-  }
-
-  function _postValidatePurchase(address _beneficiary, uint256 _weiAmount) internal {
+  function _updatePurchasingState(address _beneficiary, uint256 _weiAmount) internal {
       if (stage == CrowdsaleStage.PreICO) {
-        totalWeiRaisedDuringPreICO = totalWeiRaisedDuringPreICO.add(msg.value);
+        totalWeiRaisedDuringPreICO = totalWeiRaisedDuringPreICO.add(_weiAmount);
       }
   }
 
